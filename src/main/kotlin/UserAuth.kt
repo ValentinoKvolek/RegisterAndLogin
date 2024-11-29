@@ -1,6 +1,7 @@
 
 import com.google.gson.Gson
 import java.io.File
+import org.mindrot.jbcrypt.BCrypt
 
 class UserAuth{
 
@@ -50,19 +51,30 @@ class UserAuth{
         val email = readln()
         println("Ingrese su Contraseña:")
         val password = readln()
-        usersMaps[email] = password //Store new user
+
+        // Hash the password before storing it
+        val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
+
+        // Store the hashed password
+        usersMaps[email] = hashedPassword
+
         saveUsers(usersMaps) // Save the updated map to file
-        println("Usuario registrado con éxito.")
+
+        println("Usuario registrado correctamente")
     }
 
     fun checkLog(usersMaps: MutableMap<String, String>) {
+
         println("Ingrese su Mail:")
         val email = readln()
         println("Ingrese su Contraseña:")
         val password = readln()
+
         // check data
         if (usersMaps.containsKey(email)) {
-            if (usersMaps[email] == password) {
+            val storedHashedPassword = usersMaps[email]!!
+            // Check if the entered password matches the stored hashed password
+            if (BCrypt.checkpw(password, storedHashedPassword)) {
                 println("Se inició sesión correctamente.")
             } else {
                 println("Contraseña incorrecta.")

@@ -17,6 +17,14 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")  // Add Gson here
 }
 
+dependencies {
+    implementation("org.mindrot:jbcrypt:0.4")  // Add bcrypt hashing
+    testImplementation(kotlin("test"))
+    implementation("com.google.code.gson:gson:2.10.1")
+}
+
+
+
 tasks.test {
     useJUnitPlatform()
 }
