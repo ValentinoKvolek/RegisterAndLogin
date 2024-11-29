@@ -10,12 +10,17 @@ repositories {
 }
 
 dependencies {
+    // Kotlin test dependency
     testImplementation(kotlin("test"))
+
+    // Gson library to handle JSON
+    implementation("com.google.code.gson:gson:2.10.1")  // Add Gson here
 }
 
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(21)
 }

@@ -1,8 +1,31 @@
+
+import com.google.gson.Gson
+import java.io.File
+
 class UserAuth{
 
+    private val gson = Gson()
+    private val file = File("users_data.json")
+
+    // Load existing users from file
+    private fun loadUsers(): MutableMap<String, String> {
+        if (file.exists()) {
+            val json = file.readText() // Read JSON string from file
+            return gson.fromJson(json, MutableMap::class.java) as MutableMap<String, String>
+        }
+        return mutableMapOf() // Return an empty map if no data exists (or is the first user)
+    }
+
+    // Save users to file
+    private fun saveUsers(usersMaps: MutableMap<String, String>) {
+        val json = gson.toJson(usersMaps) // Convert map to JSON
+        file.writeText(json) // Save JSON string to file
+    }
+
     fun userAuth() {
-        val usersMaps = mutableMapOf<String, String>() // Map to store users emails and passwords
+
         var userChoice: Int? = null
+        var usersMaps = loadUsers() // Load users from file at the start
 
         do {
             println("Por favor, elija una opción:")
@@ -27,7 +50,8 @@ class UserAuth{
         val email = readln()
         println("Ingrese su Contraseña:")
         val password = readln()
-        usersMaps[email] = password
+        usersMaps[email] = password //Store new user
+        saveUsers(usersMaps) // Save the updated map to file
         println("Usuario registrado con éxito.")
     }
 
