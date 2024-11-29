@@ -1,5 +1,6 @@
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import java.io.File
 import org.mindrot.jbcrypt.BCrypt
 
@@ -9,24 +10,25 @@ class UserAuth{
     private val file = File("users_data.json")
 
     // Load existing users from file
-    private fun loadUsers(): MutableMap<String, String> {
+    private fun loadUsers(): MutableMap<String, String>? {
         if (file.exists()) {
             val json = file.readText() // Read JSON string from file
-            return gson.fromJson(json, MutableMap::class.java) as MutableMap<String, String>
+            if(json != "")
+                return gson.fromJson(json, MutableMap::class.java) as MutableMap<String, String>
         }
         return mutableMapOf() // Return an empty map if no data exists (or is the first user)
     }
 
     // Save users to file
     private fun saveUsers(usersMaps: MutableMap<String, String>) {
-        val json = gson.toJson(usersMaps) // Convert map to JSON
-        file.writeText(json) // Save JSON string to file
+        val gsonPretty = GsonBuilder().setPrettyPrinting().create() // Convert map to JSON
+        file.writeText(gsonPretty.toJson(usersMaps)) // Save JSON string to file
     }
 
     fun userAuth() {
 
         var userChoice: Int? = null
-        var usersMaps = loadUsers() // Load users from file at the start
+        var usersMaps = loadUsers()?: mutableMapOf() // Load users from file at the start
 
         do {
             println("Por favor, elija una opción:")
