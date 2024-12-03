@@ -1,12 +1,17 @@
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.application.*
-import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.plugins.callloging.*
+import io.ktor.http.HttpStatusCode
 import org.mindrot.jbcrypt.BCrypt
+import io.ktor.serialization.jackson.jackson
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.CORS
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpHeaders
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0") {
@@ -15,8 +20,22 @@ fun main() {
 }
 
 fun Application.module() {
-    val userAuth = UserAuth() // intance my logic class
+    val userAuth = UserAuth() //Intances my logic class
     install(CallLogging)
+    install(ContentNegotiation) {
+        jackson {  }
+    }
+
+    install(CORS) {
+        anyHost()
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Accept)
+    }
+
     routing {
         post("/login") {
             val parameters = call.receiveParameters()
@@ -24,22 +43,29 @@ fun Application.module() {
             val password = parameters["password"]
 
             if (email != null && password != null) {
+                val usersMaps = userAuth.loadUsers() // Load users
 
-                val usersMaps = userAuth.loadUsers() //load my register users
-                // check data
+                // Check if email exist
                 if (usersMaps.containsKey(email)) {
                     val storedHashedPassword = usersMaps[email]!!
-                    // Check if the entered password matches the stored hashed password
+
+                    // Check password
                     if (BCrypt.checkpw(password, storedHashedPassword)) {
-                        println("Se inició sesión correctamente.")
+                        call.respond(HttpStatusCode.OK, mapOf("status" to "success", "message" to "Inicio de sesión exitoso"))
+                        println("Inicio de sesión exitoso")
                     } else {
-                        println("Contraseña incorrecta.")
+                        call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "error", "message" to "Contraseña incorrecta"))
+                        println("Contraseña incorrecta")
                     }
                 } else {
-                    println("Mail incorrecto.")
+                    call.respond(HttpStatusCode.NotFound, mapOf("status" to "error", "message" to "Email no registrado"))
+                    println("Email no registrado")
                 }
+            } else {
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "error", "message" to "Email o contraseña vacíos"))
             }
         }
+
         post("/register") {
             val parameters = call.receiveParameters()
             val email = parameters["email"]
@@ -47,23 +73,26 @@ fun Application.module() {
 
             if (email != null && password != null) {
                 if (userAuth.isValidEmail(email)) {
+                    val usersMaps = userAuth.loadUsers() // load users
 
-                    val usersMaps = userAuth.loadUsers() //load my register users
-
-                    // check is the input email is already exist
+                    // Check email
                     if (usersMaps.containsKey(email)) {
-                        call.respondText("El usuario ya existe", status = HttpStatusCode.Conflict)
+                        call.respond(HttpStatusCode.Conflict, mapOf("status" to "error", "message" to "El usuario ya existe"))
                     } else {
-                        // register new user
+                        //Register new user
                         userAuth.registerUser(usersMaps, email, password)
-                        call.respondText("Usuario registrado exitosamente", status = HttpStatusCode.OK)
+                        call.respond(HttpStatusCode.Created, mapOf("status" to "success", "message" to "Usuario registrado exitosamente"))
                     }
                 } else {
-                    call.respondText("Email inválido", status = HttpStatusCode.BadRequest)
+                    call.respond(HttpStatusCode.BadRequest, mapOf("status" to "error", "message" to "Email inválido"))
                 }
             } else {
-                call.respondText("Faltan datos", status = HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "error", "message" to "Email o contraseña vacíos"))
             }
         }
     }
 }
+
+
+
+
